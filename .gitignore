@@ -1,0 +1,57 @@
+# Rust build output
+/voyage-core/target/
+target/
+
+# Cargo lock for library (optional, but common)
+# Cargo.lock
+
+# Generated UniFFI bindings
+*.swift.generated
+
+# macOS
+.DS_Store
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.moved-aside
+
+# Xcode build output
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local

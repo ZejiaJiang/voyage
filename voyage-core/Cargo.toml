@@ -1,0 +1,57 @@
+[package]
+name = "voyage-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core network engine for Voyage - a Surge-like proxy app"
+license = "MIT"
+
+[lib]
+crate-type = ["lib", "staticlib", "cdylib"]
+name = "voyage_core"
+
+[[bin]]
+name = "demo"
+path = "src/bin/demo.rs"
+
+[dependencies]
+# Userspace TCP/IP stack
+smoltcp = { version = "0.11", default-features = false, features = [
+    "alloc",
+    "medium-ip",
+    "proto-ipv4",
+    "proto-ipv6",
+    "socket-tcp",
+    "socket-udp",
+] }
+
+# Async runtime
+tokio = { version = "1", features = ["rt", "net", "io-util", "sync", "time"] }
+
+# FFI bindings generator
+uniffi = { version = "0.28" }
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Error handling
+thiserror = "1"
+
+# For async trait support
+async-trait = "0.1"
+
+# Bytes handling
+bytes = "1"
+
+[dev-dependencies]
+serial_test = "3"
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

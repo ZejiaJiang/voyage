@@ -1,0 +1,80 @@
+namespace voyage_core {
+    // Core lifecycle
+    [Throws=VoyageError]
+    void init_core(string server_host, u16 server_port, string? username, string? password);
+    
+    void shutdown_core();
+    
+    boolean is_initialized();
+    
+    // Configuration
+    [Throws=VoyageError]
+    u32 load_rules(string config);
+    
+    [Throws=VoyageError]
+    void clear_rules();
+    
+    [Throws=VoyageError]
+    u32 rule_count();
+    
+    // Packet processing
+    [Throws=VoyageError]
+    sequence<u8> process_inbound_packet(sequence<u8> packet);
+    
+    [Throws=VoyageError]
+    sequence<u8> process_outbound_packet(sequence<u8> packet);
+    
+    // Statistics
+    [Throws=VoyageError]
+    CoreStats get_stats();
+    
+    [Throws=VoyageError]
+    void add_bytes_sent(u64 bytes);
+    
+    [Throws=VoyageError]
+    void add_bytes_received(u64 bytes);
+    
+    // Routing
+    [Throws=VoyageError]
+    FfiRouteAction evaluate_route(string? domain, string? dst_ip, u16 dst_port, u16 src_port);
+    
+    // Proxy control
+    [Throws=VoyageError]
+    void enable_proxy();
+    
+    [Throws=VoyageError]
+    void disable_proxy();
+    
+    [Throws=VoyageError]
+    boolean is_proxy_enabled();
+};
+
+[Error]
+enum VoyageError {
+    "NotInitialized",
+    "AlreadyInitialized",
+    "LockError",
+    "InvalidPacket",
+    "SocketError",
+    "NatTableFull",
+    "Connection",
+    "Nat",
+    "Rule",
+    "Socks5Error",
+    "IoError",
+    "ConfigError",
+};
+
+dictionary CoreStats {
+    u64 bytes_sent;
+    u64 bytes_received;
+    u64 active_connections;
+    u64 total_connections;
+};
+
+enum FfiRouteAction {
+    "Direct",
+    "Proxy",
+    "Reject",
+};
+

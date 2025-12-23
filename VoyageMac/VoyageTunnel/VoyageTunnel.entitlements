@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- App Groups for sharing data with main app -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.voyage.mac</string>
+    </array>
+    
+    <!-- Network Extension capabilities -->
+    <key>com.apple.developer.networking.networkextension</key>
+    <array>
+        <string>packet-tunnel-provider-systemextension</string>
+    </array>
+    
+    <!-- Hardened Runtime (required for System Extensions) -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+    
+    <!-- Network client access -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    
+    <!-- Network server access -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+</dict>
+</plist>
