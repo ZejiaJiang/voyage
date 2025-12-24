@@ -52,41 +52,58 @@ A Surge-like proxy application for **iOS** and **macOS** using Rust and smoltcp 
 
 ```
 voyage/
-├── voyage-core/              # Rust library (shared)
-│   ├── Cargo.toml           # Dependencies & build config
-│   ├── build.rs             # UniFFI build script
-│   ├── Makefile             # Build automation (iOS + macOS)
-│   ├── build_ios.sh         # iOS build script
-│   ├── build_macos.sh       # macOS build script
-│   └── src/
-│       ├── lib.rs           # Main library
-│       ├── config.rs        # Configuration types
-│       ├── device.rs        # smoltcp virtual device
-│       ├── iface.rs         # Interface manager
-│       ├── nat.rs           # NAT manager
-│       ├── connection.rs    # Connection manager
-│       ├── rule.rs          # Rule engine
-│       ├── socks5.rs        # SOCKS5 client
-│       ├── proxy.rs         # Proxy manager
-│       ├── ffi.rs           # FFI interface
-│       └── error.rs         # Error handling
+├── .gitignore               # Git ignore rules
+├── README.md                # This file
 │
-├── Voyage/                   # iOS Xcode project
-│   ├── Voyage/              # Main app target
+├── voyage-core/             # Rust library (shared core)
+│   ├── Cargo.toml          # Dependencies & build config
+│   ├── Cargo.lock          # Locked dependencies
+│   ├── build.rs            # UniFFI build script
+│   ├── build-apple.sh      # macOS/iOS build script
+│   ├── build-windows.ps1   # Windows build script
+│   ├── src/
+│   │   ├── lib.rs          # Main library & public API
+│   │   ├── config.rs       # Configuration types
+│   │   ├── error.rs        # Error handling
+│   │   ├── device.rs       # smoltcp virtual TUN device
+│   │   ├── iface.rs        # Interface manager
+│   │   ├── nat.rs          # NAT manager
+│   │   ├── packet.rs       # IPv4 packet parsing
+│   │   ├── connection.rs   # Connection manager
+│   │   ├── rule.rs         # Rule engine
+│   │   ├── socks5.rs       # SOCKS5 client
+│   │   ├── proxy.rs        # Proxy manager
+│   │   ├── ffi.rs          # FFI interface
+│   │   ├── voyage_core.udl # UniFFI interface definition
+│   │   └── bin/
+│   │       └── demo.rs     # Demo binary
+│   └── tests/
+│       └── integration_test.rs
+│
+├── Voyage/                  # iOS Xcode project
+│   ├── Voyage/             # Main app target
 │   │   ├── VoyageApp.swift
-│   │   └── ContentView.swift
-│   └── VoyageTunnel/        # Network Extension
-│       └── PacketTunnelProvider.swift
+│   │   ├── ContentView.swift
+│   │   ├── Info.plist
+│   │   └── Voyage.entitlements
+│   └── VoyageTunnel/       # Network Extension
+│       ├── PacketTunnelProvider.swift
+│       ├── Info.plist
+│       └── VoyageTunnel.entitlements
 │
-└── VoyageMac/                # macOS Xcode project
-    ├── VoyageMac/           # Main app target
+└── VoyageMac/              # macOS Xcode project
+    ├── README.md           # macOS-specific documentation
+    ├── VoyageMac/          # Main app target
     │   ├── VoyageMacApp.swift
     │   ├── ContentView.swift
     │   ├── VPNManager.swift
     │   ├── SettingsView.swift
     │   ├── MenuBarView.swift
-    │   └── SystemExtensionManager.swift
-    └── VoyageTunnel/        # System Extension
+    │   ├── SystemExtensionManager.swift
+    │   ├── Info.plist
+    │   ├── VoyageMac.entitlements
+    │   └── Assets.xcassets/
+    └── VoyageTunnel/       # System Extension
         └── PacketTunnelProvider.swift
 ```
 
@@ -95,185 +112,116 @@ voyage/
 ### Prerequisites
 
 1. **Rust** - Install from https://rustup.rs/
-2. **Xcode** - Install from Mac App Store
+2. **Xcode** (macOS only) - Install from Mac App Store
 3. **Apple Developer Account** - Required for Network/System Extension entitlements
 
-### Build Rust Core
+### Build & Test on Windows/Linux
 
 ```bash
 cd voyage-core
 
-# Install all targets
-make setup
-
-# Build for iOS
-make build-ios
-
-# Build for macOS (universal binary)
-make build-universal
-
-# Generate Swift bindings
-make generate-bindings
-
-# Run tests
+# Run all tests (100 tests)
 cargo test
+
+# Run the demo
+cargo run --bin demo
 ```
 
-### iOS Development
+### Build & Test on Windows (PowerShell)
 
-See the [Voyage iOS README](Voyage/README.md) for iOS-specific setup.
+```powershell
+cd voyage-core
 
-### macOS Development
+# Full build and test
+.\build-windows.ps1
 
-See the [VoyageMac README](VoyageMac/README.md) for macOS-specific setup.
-
-## Step 1: Setup Cross-Compilation Environment
-
-### Install Rust Targets
-
-```bash
-# iOS targets
-rustup target add aarch64-apple-ios
-rustup target add aarch64-apple-ios-sim
-
-# macOS targets
-rustup target add x86_64-apple-darwin
-rustup target add aarch64-apple-darwin
+# Or individual commands
+.\build-windows.ps1 test   # Run tests
+.\build-windows.ps1 demo   # Run demo
+.\build-windows.ps1 build  # Build only
 ```
 
-### Install UniFFI Bindgen
-
-```bash
-cargo install uniffi_bindgen
-```
-
-### Install iOS Rust Targets
-
-Run the following commands to install the iOS compilation targets:
-
-```bash
-# Install iOS device target (arm64)
-rustup target add aarch64-apple-ios
-
-# Install iOS Simulator target (Apple Silicon)
-rustup target add aarch64-apple-ios-sim
-
-# Optional: Intel Mac simulator target
-rustup target add x86_64-apple-ios
-```
-
-### Install UniFFI Bindgen
-
-```bash
-cargo install uniffi_bindgen
-```
-
-### Verify Installation
-
-```bash
-rustup target list --installed | grep ios
-# Should show:
-# aarch64-apple-ios
-# aarch64-apple-ios-sim
-```
-
-## Building the Rust Library
-
-### Using Makefile (Recommended)
+### Build for iOS/macOS (on Mac)
 
 ```bash
 cd voyage-core
 
-# First-time setup
-make setup
+# Make script executable
+chmod +x build-apple.sh
 
-# Build for iOS
-make build-ios
+# Build everything (iOS + macOS + bindings)
+./build-apple.sh
 
-# Generate Swift bindings
-make generate-bindings
-
-# Full release build
-make release
+# Or individual targets
+./build-apple.sh ios      # iOS only
+./build-apple.sh macos    # macOS only
+./build-apple.sh bindings # Generate Swift bindings
+./build-apple.sh summary  # Show build artifacts
 ```
 
-### Using Build Script
+## Rust Core Modules
 
-```bash
-cd voyage-core
-chmod +x build_ios.sh
-./build_ios.sh
+| Module | Description |
+|--------|-------------|
+| `lib.rs` | Public API, VoyageCore struct |
+| `config.rs` | ProxyConfig with server settings |
+| `error.rs` | VoyageError enum with thiserror |
+| `device.rs` | VirtualTunDevice for smoltcp |
+| `iface.rs` | InterfaceManager wrapping smoltcp |
+| `nat.rs` | NatManager for connection tracking |
+| `packet.rs` | ParsedPacket for IPv4/TCP/UDP parsing |
+| `connection.rs` | ConnectionManager combining NAT + sockets |
+| `rule.rs` | RuleEngine with Surge-style rules |
+| `proxy.rs` | ProxyManager for routing decisions |
+| `socks5.rs` | SOCKS5 client implementation |
+| `ffi.rs` | UniFFI exported functions |
+
+## Rule Engine
+
+Supports Surge-style routing rules:
+
+```
+# Domain matching
+DOMAIN, www.google.com, PROXY
+DOMAIN-SUFFIX, google.com, PROXY
+DOMAIN-KEYWORD, facebook, REJECT
+
+# IP matching
+IP-CIDR, 10.0.0.0/8, DIRECT
+IP-CIDR, 192.168.0.0/16, DIRECT
+
+# GEOIP (placeholder)
+GEOIP, CN, DIRECT
+
+# Port matching
+DST-PORT, 443, PROXY
+DST-PORT, 80, DIRECT
+
+# Default rule
+FINAL, PROXY
 ```
 
-### Manual Build
+## Test Results
 
-```bash
-cd voyage-core
-
-# Build for iOS device
-cargo build --release --target aarch64-apple-ios
-
-# Build for iOS Simulator (Apple Silicon)
-cargo build --release --target aarch64-apple-ios-sim
-
-# Generate Swift bindings
-uniffi-bindgen generate \
-    --library target/aarch64-apple-ios/release/libvoyage_core.a \
-    --language swift \
-    --out-dir generated/swift
 ```
+cargo test
+   
+running 86 tests (unit tests)
+...
+test result: ok. 86 passed; 0 failed
 
-## Xcode Project Setup
+running 14 tests (integration tests)
+...
+test result: ok. 14 passed; 0 failed
 
-### 1. Create New Xcode Project
-
-1. Open Xcode
-2. File → New → Project
-3. Select "App" under iOS
-4. Product Name: `Voyage`
-5. Bundle Identifier: `com.voyage.app`
-6. Interface: SwiftUI
-7. Language: Swift
-
-### 2. Add Network Extension Target
-
-1. File → New → Target
-2. Select "Network Extension"
-3. Product Name: `VoyageTunnel`
-4. Provider Type: Packet Tunnel
-5. Bundle Identifier: `com.voyage.app.tunnel`
-
-### 3. Configure Entitlements
-
-Both the main app and the tunnel extension need Network Extension entitlements:
-
-1. Select your target → Signing & Capabilities
-2. Click "+ Capability"
-3. Add "Network Extensions"
-4. Enable "Packet Tunnel"
-5. Add "App Groups" capability
-6. Create group: `group.com.voyage.app`
-
-### 4. Link Rust Library
-
-1. Add the generated Swift files to both targets
-2. Add the static library:
-   - Build Settings → Library Search Paths
-   - Add: `$(PROJECT_DIR)/../voyage-core/target/aarch64-apple-ios/release`
-3. Link the library:
-   - Build Phases → Link Binary With Libraries
-   - Add `libvoyage_core.a`
-
-### 5. Configure Header Search Path
-
-1. Build Settings → Header Search Paths
-2. Add: `$(PROJECT_DIR)/../voyage-core/generated/include`
+Total: 100 tests passed
+```
 
 ## Memory Constraints
 
-⚠️ **Critical**: iOS Network Extensions have a hard memory limit of 15-50MB.
+⚠️ **Important**: iOS Network Extensions have a hard memory limit of 15-50MB.
 
-### Rust Optimizations (already configured in Cargo.toml)
+### Rust Optimizations (configured in Cargo.toml)
 
 ```toml
 [profile.release]
@@ -284,12 +232,16 @@ panic = "abort"      # Smaller binary
 strip = true         # Remove symbols
 ```
 
-### Runtime Guidelines
+## Dependencies
 
-1. Pre-allocate socket buffers (64KB per connection max)
-2. Limit concurrent connections (e.g., max 100)
-3. Avoid large Vec allocations
-4. Use streaming instead of buffering entire payloads
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| smoltcp | 0.11 | Userspace TCP/IP stack |
+| tokio | 1 | Async runtime (minimal) |
+| uniffi | 0.28 | Swift FFI bindings |
+| thiserror | 1 | Error handling |
+| env_logger | 0.11 | Logging |
+| serial_test | 3 | Test serialization |
 
 ## Development Roadmap
 
@@ -299,34 +251,19 @@ strip = true         # Remove symbols
 - [x] **Step 4**: Implement Rule Engine & SOCKS5 Client
 - [x] **Step 5**: iOS Tunnel Provider Integration
 - [x] **Step 6**: macOS App with System Extension
-
-## Testing
-
-```bash
-cd voyage-core
-
-# Run all unit tests (60 tests)
-cargo test --lib
-
-# Run integration tests (simulates tunnel behavior)
-cargo test --test integration_test
-
-# Run everything
-cargo test
-
-# Run demo binary (Windows/macOS/Linux)
-cargo run --bin demo
-```
+- [ ] **Step 7**: Full proxy tunnel implementation
+- [ ] **Step 8**: App Store release
 
 ## Features
 
 ### Rust Core (voyage-core)
-- ✅ Userspace TCP/IP stack (smoltcp)
+- ✅ Userspace TCP/IP stack (smoltcp 0.11)
 - ✅ NAT & connection tracking
-- ✅ Surge-style rule engine (DOMAIN, DOMAIN-SUFFIX, IP-CIDR, GEOIP, etc.)
+- ✅ Surge-style rule engine (DOMAIN, DOMAIN-SUFFIX, IP-CIDR, DST-PORT, FINAL)
 - ✅ SOCKS5 client with authentication
 - ✅ Proxy routing (DIRECT, PROXY, REJECT)
-- ✅ 60+ unit tests, 5 integration tests
+- ✅ 86 unit tests + 14 integration tests
+- ✅ Cross-platform (Windows, macOS, Linux, iOS)
 
 ### iOS App (Voyage)
 - ✅ SwiftUI interface
@@ -336,7 +273,7 @@ cargo run --bin demo
 
 ### macOS App (VoyageMac)
 - ✅ Native SwiftUI interface
-- ✅ Menu bar app
+- ✅ Menu bar app with quick access
 - ✅ Dashboard with real-time stats
 - ✅ Connections viewer
 - ✅ Rules editor
@@ -348,9 +285,10 @@ cargo run --bin demo
 
 | Component | Technology |
 |-----------|------------|
-| Language | Rust (Core), Swift (UI/Extension) |
+| Core Language | Rust |
+| UI Language | Swift (SwiftUI) |
 | TCP/IP Stack | smoltcp (Userspace) |
-| Async Runtime | tokio (Minimalistic config) |
+| Async Runtime | tokio |
 | FFI | UniFFI |
 | iOS Extension | Network Extension |
 | macOS Extension | System Extension |
